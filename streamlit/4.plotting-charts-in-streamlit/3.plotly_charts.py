@@ -1,0 +1,28 @@
+import streamlit as st
+
+import pandas as pd
+import numpy as np
+
+import plotly.express as px
+
+
+def main():
+    st.title("Plotting In Streamlit with Plotly")
+    df = pd.read_csv("../data/prog_languages_data.csv")
+    st.dataframe(df)
+
+    fig = px.pie(data_frame=df,
+                 values='Sum',
+                 names='lang',
+                 title='Pie Chart of Languages')
+    st.plotly_chart(fig)
+
+    fig2 = px.bar(data_frame=df,
+                  x='lang',
+                  y='Sum',
+                  title='Bar Chart of Languages')
+    st.plotly_chart(fig2)
+
+
+if __name__ == '__main__':
+    main()
