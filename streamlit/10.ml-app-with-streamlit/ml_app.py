@@ -59,7 +59,7 @@ def run_ml_app():
 
     col1, col2 = st.beta_columns(2)
     with col1:
-        age = st.number_input("Age", min_value=10, max_value=100)
+        age = st.number_input("Age", value=10, min_value=10, max_value=100)
         gender = st.radio("Gender", options=["Female", "Male"])
         polyuria = st.radio("Polyuria", ["No", "Yes"])
         polydispsia = st.radio("Polydispsia", ["No", "Yes"])
@@ -86,7 +86,7 @@ def run_ml_app():
             'polydispsia': polydispsia,
             'sudden_weight_loss': sudden_weight_loss,
             'weakness': weakness,
-            'polydispsia': polydispsia,
+            'polyphagia': polyphagia,
             'genital_thrush': genital_thrush,
             'visual_blurring': visual_blurring,
             'itching': itching,
@@ -95,7 +95,7 @@ def run_ml_app():
             'partial_paresis': partial_paresis,
             'muscle_stiffness': muscle_stiffness,
             'alopecia': alopecia,
-            'obesity': obesity
+            'obesity': obesity,
         }
 
         st.write(result)
@@ -111,3 +111,25 @@ def run_ml_app():
                 encoded_result.append(get_fvalue(value))
 
         st.write(encoded_result)
+
+    with st.beta_expander("Prediction Result"):
+        single_sample = np.array(encoded_result).reshape(1, -1)
+        # st.write(single_sample)
+
+        model = load_model("models/logistic_regression_model_diabetes_21_oct_2020.pkl")
+
+        prediction = model.predict(single_sample)
+        pred_prob = model.predict_proba(single_sample)
+        # st.write(prediction)
+        # st.write(pred_prob)
+
+        if prediction == 1:
+            st.warning("Positive Risk {}".format(prediction[0]))
+            pred_probability_score = {"Negative DM Risk": pred_prob[0][0] * 100,
+                                      "Positive DN Risk": pred_prob[0][1] * 100}
+            st.write(pred_probability_score)
+        else:
+            st.success("Negative Risk {}".format(prediction[0]))
+            pred_probability_score = {"Negative DM Risk": pred_prob[0][0] * 100,
+                                      "Positive DN Risk": pred_prob[0][1] * 100}
+            st.write(pred_probability_score)
