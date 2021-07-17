@@ -29,4 +29,5 @@
     - hal
 + l/isort: sorting import
 + black: format
++ vulture: check for non-used import
     
