@@ -1,3 +1,5 @@
+import base64
+
 import streamlit as st
 import streamlit.components.v1 as stc
 
@@ -46,7 +48,72 @@ def load_image(image_file):
 def get_readable_time(my_time):
     """ Function to get Human Readable Time"""
     return datetime.fromtimestamp(my_time).strftime('%Y-%m-%d-%H:%M')
+
+
+from PIL.ExifTags import TAGS, GPSTAGS
+
+
 # Forensic MetaData Extraction
+def get_exif(filename):
+    exif = Image.open(filename)._getexif()
+
+    if exif is not None:
+        for key, value in exif.items():
+            name = TAGS.get(key, key)
+            exif[name] = exif.pop(key)
+
+        if 'GPSInfo' in exif:
+            for key in exif['GPSInfo'].keys():
+                name = GPSTAGS.get(key, key)
+                exif['GPSInfo'][name] = exif['GPSInfo'].pop(key)
+
+    return exif
+
+
+def get_coordinates(info):
+    for key in ['Latitude', 'Longitude']:
+        if 'GPS' + key in info and 'GPS' + key + 'Ref' in info:
+            e = info['GPS' + key]
+            ref = info['GPS' + key + 'Ref']
+            info[key] = (str(e[0][0] / e[0][1]) + '°' +
+                         str(e[1][0] / e[1][1]) + '′' +
+                         str(e[2][0] / e[2][1]) + '″ ' +
+                         ref)
+
+    if 'Latitude' in info and 'Longitude' in info:
+        return [info['Latitude'], info['Longitude']]
+
+
+def get_decimal_coordinates(info):
+    for key in ['Latitude', 'Longitude']:
+        if 'GPS' + key in info and 'GPS' + key + 'Ref' in info:
+            e = info['GPS' + key]
+            ref = info['GPS' + key + 'Ref']
+            info[key] = (e[0][0] / e[0][1] +
+                         e[1][0] / e[1][1] / 60 +
+                         e[2][0] / e[2][1] / 3600
+                         ) * (-1 if ref in ['S', 'W'] else 1)
+
+    if 'Latitude' in info and 'Longitude' in info:
+        return [info['Latitude'], info['Longitude']]
+
+
+import time
+
+timestr = time.strftime("%Y%m%d-%H%M%S")
+
+
+# Function to Download
+def make_downloadable(data: pd.DataFrame):
+    csv_file = data.to_csv(index=False)
+    # B64 encoding
+    b64 = base64.b64encode(csv_file.encode()).decode()  # B64 encoding
+    st.markdown("### ** Download CSV File **")
+    new_filename = "metadata_result_{}.csv".format(timestr)
+    href = f'''
+    <a href="data:file/csv;base64,{b64}" download="{new_filename}">Click Here!</a>
+    '''
+    st.markdown(href, unsafe_allow_html=True)
 
 
 # App Structure
@@ -88,7 +155,7 @@ def main():
         image_file = st.file_uploader("Upload Image",
                                       type=["png", "jpeg", "jpg"])
         if image_file is not None:
-            # Binary Byte
+            # UploadFile Class is File-Like Binary Byte
             # st.write(type(image_file))
             # st.write(dir(image_file))
             with st.beta_expander("File Stats"):
@@ -149,6 +216,41 @@ def main():
                     df_img_details_default = pd.DataFrame(list(img_details.items()),
                                                           columns=["Meta Tags", "Value"])
                     st.dataframe(df_img_details_default)
+
+            # Layout For Forensic
+            fcol1, fcol2 = st.beta_columns(2)
+            with fcol1:
+                with st.beta_expander("Exifread Tool"):
+                    # img = load_image(image_file)
+                    # st.image(img)
+                    meta_tags = exifread.process_file(image_file)
+                    # st.write(meta_tags)
+
+                    df_img_details_exifread = pd.DataFrame(list(meta_tags.items()),
+                                                           columns=["Meta Tags", "Value"])
+                    st.dataframe(df_img_details_exifread)
+
+            with fcol2:
+                with st.beta_expander("Image GeoCoordinates"):
+                    img_details_with_exif = get_exif(image_file)
+                    try:
+                        gps_info = img_details_with_exif
+                    except:
+                        gps_info = "None Found"
+
+                    st.write(gps_info)
+                    try:
+                        img_coordinates = get_decimal_coordinates(gps_info)
+                        st.write(img_coordinates)
+                    except:
+                        st.write("None Found")
+
+            with st.beta_expander("Download Results"):
+                final_df = pd.concat([df_file_details,
+                                      df_img_details_default,
+                                      df_img_details_exifread])
+                # st.dataframe(final_df)
+                make_downloadable(final_df)
     elif choice == "Audio":
         st.subheader("Audio MetaData Extraction")
     elif choice == "DocumentFiles":
