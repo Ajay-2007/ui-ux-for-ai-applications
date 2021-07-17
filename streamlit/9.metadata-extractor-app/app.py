@@ -158,6 +158,7 @@ def main():
     menu = ["Home", "Image", "Audio", "DocumentFiles", "Analytics", "About"]
     choice = st.sidebar.selectbox(label="Menu",
                                   options=menu)
+    create_uploaded_file_table()
 
     if choice == "Home":
         st.subheader("Home")
@@ -222,6 +223,12 @@ def main():
                 df_file_details = pd.DataFrame(list(file_details_combined.items()),
                                                columns=["Meta Tags", "Value"])
                 st.dataframe(df_file_details)
+
+                # Track Details
+                add_file_details(image_file.name,
+                                 image_file.type,
+                                 image_file.size,
+                                 datetime.now())
 
             # Layouts
             c1, c2 = st.beta_columns(2)
@@ -328,6 +335,11 @@ def main():
                                                    columns=["Meta Tags", "Value"])
                     st.dataframe(df_file_details)
 
+                    # Track Details
+                    add_file_details(audio_file.name,
+                                     audio_file.type,
+                                     audio_file.size,
+                                     datetime.now())
             # audio_col1, audio_col2 = st.beta_columns(2)
             # Extraction Process using mutagen
             # with audio_col1:
@@ -384,6 +396,12 @@ def main():
                     df_file_details = pd.DataFrame(list(file_details_combined.items()),
                                                    columns=["Meta Tags", "Value"])
                     st.dataframe(df_file_details)
+
+                    # Track Details
+                    add_file_details(text_file.name,
+                                     text_file.type,
+                                     text_file.size,
+                                     datetime.now())
             # Extraction Process
             with dcol2:
                 with st.beta_expander("Metadata"):
@@ -403,10 +421,18 @@ def main():
 
     elif choice == "Analytics":
         st.subheader("Analytics")
-
+        all_uploaded_files = view_all_data()
+        df = pd.DataFrame(all_uploaded_files, columns=["FileName", "FileType", "FileSize", "UploadTime"])
         # Monitor All Uploads
+        with st.beta_expander("Monitor"):
+            st.success("View All Uploaded Files")
+            st.dataframe(df)
 
         # Stats of Uploaded Files
+        with st.beta_expander("Distribution of FileTypes"):
+            fig = plt.figure()
+            sns.countplot(df['FileType'])
+            st.pyplot(fig)
     else:
         st.subheader("About")
         # Image
