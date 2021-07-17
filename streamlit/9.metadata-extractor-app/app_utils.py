@@ -2,11 +2,10 @@ from datetime import datetime
 from PIL.ExifTags import TAGS, GPSTAGS
 from PIL import Image
 
+
 def get_readable_time(my_time):
-    """ Function to get Human Readable Time"""
-    return datetime.fromtimestamp(my_time).strftime('%Y-%m-%d-%H:%M')
-
-
+    """Function to get Human Readable Time"""
+    return datetime.fromtimestamp(my_time).strftime("%Y-%m-%d-%H:%M")
 
 
 # Forensic MetaData Extraction
@@ -18,38 +17,41 @@ def get_exif(filename):
             name = TAGS.get(key, key)
             exif[name] = exif.pop(key)
 
-        if 'GPSInfo' in exif:
-            for key in exif['GPSInfo'].keys():
+        if "GPSInfo" in exif:
+            for key in exif["GPSInfo"].keys():
                 name = GPSTAGS.get(key, key)
-                exif['GPSInfo'][name] = exif['GPSInfo'].pop(key)
+                exif["GPSInfo"][name] = exif["GPSInfo"].pop(key)
 
     return exif
 
 
 def get_coordinates(info):
-    for key in ['Latitude', 'Longitude']:
-        if 'GPS' + key in info and 'GPS' + key + 'Ref' in info:
-            e = info['GPS' + key]
-            ref = info['GPS' + key + 'Ref']
-            info[key] = (str(e[0][0] / e[0][1]) + '°' +
-                         str(e[1][0] / e[1][1]) + '′' +
-                         str(e[2][0] / e[2][1]) + '″ ' +
-                         ref)
+    for key in ["Latitude", "Longitude"]:
+        if "GPS" + key in info and "GPS" + key + "Ref" in info:
+            e = info["GPS" + key]
+            ref = info["GPS" + key + "Ref"]
+            info[key] = (
+                str(e[0][0] / e[0][1])
+                + "°"
+                + str(e[1][0] / e[1][1])
+                + "′"
+                + str(e[2][0] / e[2][1])
+                + "″ "
+                + ref
+            )
 
-    if 'Latitude' in info and 'Longitude' in info:
-        return [info['Latitude'], info['Longitude']]
+    if "Latitude" in info and "Longitude" in info:
+        return [info["Latitude"], info["Longitude"]]
 
 
 def get_decimal_coordinates(info):
-    for key in ['Latitude', 'Longitude']:
-        if 'GPS' + key in info and 'GPS' + key + 'Ref' in info:
-            e = info['GPS' + key]
-            ref = info['GPS' + key + 'Ref']
-            info[key] = (e[0][0] / e[0][1] +
-                         e[1][0] / e[1][1] / 60 +
-                         e[2][0] / e[2][1] / 3600
-                         ) * (-1 if ref in ['S', 'W'] else 1)
+    for key in ["Latitude", "Longitude"]:
+        if "GPS" + key in info and "GPS" + key + "Ref" in info:
+            e = info["GPS" + key]
+            ref = info["GPS" + key + "Ref"]
+            info[key] = (
+                e[0][0] / e[0][1] + e[1][0] / e[1][1] / 60 + e[2][0] / e[2][1] / 3600
+            ) * (-1 if ref in ["S", "W"] else 1)
 
-    if 'Latitude' in info and 'Longitude' in info:
-        return [info['Latitude'], info['Longitude']]
-
+    if "Latitude" in info and "Longitude" in info:
+        return [info["Latitude"], info["Longitude"]]
