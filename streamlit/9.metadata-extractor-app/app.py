@@ -5,14 +5,11 @@ import streamlit.components.v1 as stc
 
 # EDA Packages
 import pandas as pd
-import numpy as np
 
 # Data Visualization Packages
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib
-
-matplotlib.use("Agg")  # TkAgg
 
 # Opening Files
 # For Images
@@ -25,6 +22,17 @@ import mutagen
 
 # For PDF
 from PyPDF2 import PdfFileReader
+
+import time
+
+# Utils
+from app_utils import *
+# Database Management
+from db_utils import *
+
+matplotlib.use("Agg")  # TkAgg
+
+timestr = time.strftime("%Y%m%d-%H%M%S")
 
 # HTML
 metadata_wiki = """
@@ -45,64 +53,6 @@ def load_image(image_file):
     return img
 
 
-def get_readable_time(my_time):
-    """ Function to get Human Readable Time"""
-    return datetime.fromtimestamp(my_time).strftime('%Y-%m-%d-%H:%M')
-
-
-from PIL.ExifTags import TAGS, GPSTAGS
-
-
-# Forensic MetaData Extraction
-def get_exif(filename):
-    exif = Image.open(filename)._getexif()
-
-    if exif is not None:
-        for key, value in exif.items():
-            name = TAGS.get(key, key)
-            exif[name] = exif.pop(key)
-
-        if 'GPSInfo' in exif:
-            for key in exif['GPSInfo'].keys():
-                name = GPSTAGS.get(key, key)
-                exif['GPSInfo'][name] = exif['GPSInfo'].pop(key)
-
-    return exif
-
-
-def get_coordinates(info):
-    for key in ['Latitude', 'Longitude']:
-        if 'GPS' + key in info and 'GPS' + key + 'Ref' in info:
-            e = info['GPS' + key]
-            ref = info['GPS' + key + 'Ref']
-            info[key] = (str(e[0][0] / e[0][1]) + '°' +
-                         str(e[1][0] / e[1][1]) + '′' +
-                         str(e[2][0] / e[2][1]) + '″ ' +
-                         ref)
-
-    if 'Latitude' in info and 'Longitude' in info:
-        return [info['Latitude'], info['Longitude']]
-
-
-def get_decimal_coordinates(info):
-    for key in ['Latitude', 'Longitude']:
-        if 'GPS' + key in info and 'GPS' + key + 'Ref' in info:
-            e = info['GPS' + key]
-            ref = info['GPS' + key + 'Ref']
-            info[key] = (e[0][0] / e[0][1] +
-                         e[1][0] / e[1][1] / 60 +
-                         e[2][0] / e[2][1] / 3600
-                         ) * (-1 if ref in ['S', 'W'] else 1)
-
-    if 'Latitude' in info and 'Longitude' in info:
-        return [info['Latitude'], info['Longitude']]
-
-
-import time
-
-timestr = time.strftime("%Y%m%d-%H%M%S")
-
-
 # Function to Download
 def make_downloadable(data: pd.DataFrame):
     csv_file = data.to_csv(index=False)
@@ -114,39 +64,6 @@ def make_downloadable(data: pd.DataFrame):
     <a href="data:file/csv;base64,{b64}" download="{new_filename}">Click Here!</a>
     '''
     st.markdown(href, unsafe_allow_html=True)
-
-
-# Database Management
-import sqlite3
-
-conn = sqlite3.connect('data.db')
-c = conn.cursor()
-
-
-# Table
-def create_uploaded_file_table():
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS files_table(filename TEXT, 
-    filetype TEXT, filesize TEXT, upload_date TIMESTAMP)
-    """)
-
-
-# Adding Details
-def add_file_details(filename, filetype, filesize, upload_date):
-    c.execute(f"""
-    INSERT INTO files_table(filename, filetype, filesize, upload_date)
-    VALUES (?, ?, ?, ?)
-    """, (filename, filetype, filesize, upload_date))
-    conn.commit()
-
-
-# View Details
-def view_all_data():
-    c.execute("""
-    SELECT * FROM files_table
-    """)
-    data = c.fetchall()
-    return data
 
 
 # App Structure

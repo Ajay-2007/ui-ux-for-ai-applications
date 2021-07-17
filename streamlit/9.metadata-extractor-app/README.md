@@ -21,4 +21,12 @@
 + About
     - Monitor
     - Stats of Uploads
+
+### Refactor & Tweaking
++ radon: static code analysis
+    - mi: maintainable
+    - cc: cyclomatic complexity
+    - hal
++ l/isort: sorting import
++ black: format
     
